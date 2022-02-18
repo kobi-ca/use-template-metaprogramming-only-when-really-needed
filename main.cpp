@@ -99,8 +99,12 @@ int main() {
     {
         CRTP::vector_f<3> a, b, c;
         // Book has typo here. it is missing the last vector_f<3>
-        auto v = a + b + c;
-        std::clog << v.size() << '\n';
+        auto v1 = a + b + c;
+        auto v2 = a + b;
+        std::clog << v1.size() << ' ' << v2.size() <<  '\n';
+        const auto v2_0 = v2[0];
+        const auto v1_0 = v1[0];
+        std::clog << v1_0 << ' ' << v2_0 << '\n';
     }
     return 0;
 }
