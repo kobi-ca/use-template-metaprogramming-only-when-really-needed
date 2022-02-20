@@ -1,5 +1,78 @@
 #include <iostream>
 #include <array>
+#include <memory>
+
+// To explain runtime dynamic polymorphism vs CRTP, compile time
+namespace runtime_poly {
+
+    class Base {
+    public:
+        virtual ~Base() = default;
+        virtual void do_something() const = 0;
+    };
+
+    class Derived1 : public Base {
+    public:
+        void do_something() const override {
+            std::clog << "Derived1::do_something\n";
+        }
+    };
+
+    class Derived2 : public Base {
+    public:
+        void do_something() const override {
+            std::clog << "Derived2::do_something\n";
+        }
+    };
+
+    void using_poly_example () {
+        constexpr auto NUM = 2U;
+        std::array<std::unique_ptr<Base>, NUM> arr {std::make_unique<Derived1>(), std::make_unique<Derived2>()};
+        for (const auto& p : arr) {
+            p->do_something();
+        }
+    }
+
+}
+
+namespace explaining_crtp {
+
+    template <typename Derived>
+    class Base {
+    public:
+        // Nothing is virtual, no virtual dtor please ...
+        void do_something() const {
+            static_cast<const Derived*>(this)->do_something();
+        }
+    };
+
+    // curious reoccurring pattern
+    class Derived1 : public Base<Derived1> { // putting "Self"
+    public:
+        void do_something() const {
+            std::clog << "crtp Derived1::do_something\n";
+        }
+    };
+
+    class Derived2 : public Base<Derived2> { // putting "Self"
+    public:
+        void do_something() const {
+            std::clog << "crtp Derived2::do_something\n";
+        }
+    };
+
+    template <typename T>
+    void do_something(const Base<T>& b) {
+        b.do_something();
+    }
+
+    void using_crtp_example () {
+        Derived1 derived1;
+        Derived2 derived2;
+        do_something(derived1);
+        do_something(derived2);
+    }
+}
 
 namespace Original {
     template<size_t N>
@@ -106,5 +179,11 @@ int main() {
         const auto v1_0 = v1[0];
         std::clog << v1_0 << ' ' << v2_0 << '\n';
     }
+
+    // runtime example
+    runtime_poly::using_poly_example();
+
+    // crtp example
+    explaining_crtp::using_crtp_example();
     return 0;
 }
